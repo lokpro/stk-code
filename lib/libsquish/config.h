@@ -42,6 +42,8 @@
 #endif
 #if SQUISH_USE_ALTIVEC || SQUISH_USE_SSE
 #define SQUISH_USE_SIMD 1
+#define SQUISH_USE_SIMD 0
+#define SQUISH_USE_SSE 0
 #else
 #define SQUISH_USE_SIMD 0
 #endif

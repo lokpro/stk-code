@@ -75,7 +75,7 @@ namespace Online
 #ifdef __EMSCRIPTEN__
         int m_curl_code;
 #else
-      CURLCode m_curl_code;
+        CURLcode m_curl_code;
 #endif
 
         /** String to store the received data in. */

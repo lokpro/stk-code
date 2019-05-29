@@ -475,10 +475,9 @@ void ClientLobby::finalizeConnectionRequest(NetworkString* header,
         auto crypto = Crypto::getClientCrypto();
         Crypto::resetClientAES();
 #endif
-	bool crypto = false;
         BareNetworkString* result = new BareNetworkString();
 #ifndef __EMSCRIPTEN__
-        if (!crypto->encryptConnectionsRequest(*rest))
+        if (!crypto->encryptConnectionRequest(*rest))
 #else
 	if (true)
 #endif

@@ -44,8 +44,12 @@
 
 
 //! Uncomment this line to compile with the SDL device
+//#define _IRR_COMPILE_WITH_SDL_DEVICE_
+#ifdef __EMSCRIPTEN__
 #define _IRR_COMPILE_WITH_SDL_DEVICE_
 #define NO_IRR_COMPILE_WITH_X11_
+#endif
+
 #ifdef NO_IRR_COMPILE_WITH_SDL_DEVICE_
 #undef _IRR_COMPILE_WITH_SDL_DEVICE_
 #endif
@@ -117,7 +121,9 @@
 #define _IRR_LINUX_PLATFORM_
 #endif
 #define _IRR_POSIX_API_
-/* #define _IRR_COMPILE_WITH_X11_DEVICE_ */
+#ifndef __EMSCRIPTEN__
+#define _IRR_COMPILE_WITH_X11_DEVICE_
+#endif
 //#define _IRR_COMPILE_WITH_WAYLAND_DEVICE_
 #endif
 
@@ -173,17 +179,14 @@ If not defined, Windows Multimedia library is used, which offers also broad supp
 //! Define _IRR_COMPILE_WITH_OPENGL_ to compile the Irrlicht engine with OpenGL.
 /** If you do not wish the engine to be compiled with OpenGL, comment this
 define out. */
-/* #if !defined(_IRR_IPHONE_PLATFORM_) && !defined(_IRR_ANDROID_PLATFORM_) */
-/* #define _IRR_COMPILE_WITH_OPENGL_ */
-/* #endif */
-/* #define NO_IRR_COMPILE_WITH_OPENGL_ */
-
-/* #ifdef NO_IRR_COMPILE_WITH_OPENGL_ */
-/* #error "nani" */
-/* #undef _IRR_COMPILE_WITH_OPENGL_ */
-/* #endif */
-
-/* #define _IRR_COMPILE_WITH_OPENGL_ */
+#ifndef __EMSCRIPTEN__
+#if !defined(_IRR_IPHONE_PLATFORM_) && !defined(_IRR_ANDROID_PLATFORM_)
+#define _IRR_COMPILE_WITH_OPENGL_
+#endif
+#ifdef NO_IRR_COMPILE_WITH_OPENGL_
+#undef _IRR_COMPILE_WITH_OPENGL_
+#endif
+#endif
 
 //! Define _IRR_COMPILE_WITH_OGLES2_ to compile the Irrlicht engine with OpenGL-ES 2.x.
 /** If you do not wish the engine to be compiled with OpenGL-ES 2.x, comment
@@ -193,9 +196,9 @@ define out. */
  if using this driver, to avoid problems with the ogl-es emulators.
  */
 #define _IRR_COMPILE_WITH_OGLES2_
-/* #ifdef NO_IRR_COMPILE_WITH_OGLES2_ */
-/* #undef _IRR_COMPILE_WITH_OGLES2_ */
-/* #endif */
+#if defined(NO_IRR_COMPILE_WITH_OGLES2_) && !defined(__EMSCRIPTEN__)
+#undef _IRR_COMPILE_WITH_OGLES2_
+#endif
 #ifndef IRR_OGLES2_SHADER_PATH
 #ifdef _IRR_COMPILE_WITH_IPHONE_DEVICE_
 #define IRR_OGLES2_SHADER_PATH ""
@@ -210,7 +213,6 @@ define out. */
 /** If you do not wish the engine to be compiled with X11, comment this
 define out. */
 // Only used in LinuxDevice.
-#undef _IRR_COMPILE_WITH_X11_
 #ifdef NO_IRR_COMPILE_WITH_X11_
 #undef _IRR_COMPILE_WITH_X11_
 #endif

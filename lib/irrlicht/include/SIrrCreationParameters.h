@@ -22,7 +22,7 @@ namespace irr
 	{
 		//! Constructs a SIrrlichtCreationParameters structure with default values.
 		SIrrlichtCreationParameters() :
-			DeviceType(EIDT_SDL),
+			DeviceType(EIDT_BEST),
 			DriverType(video::EDT_BURNINGSVIDEO),
 			WindowSize(core::dimension2d<u32>(800, 600)),
 			Bits(16),

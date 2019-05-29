@@ -17,12 +17,11 @@ if(NOT SERVER_ONLY)
     endif()
 
     if(NOT USE_GLES2)
-        message(INFO "not using gles2")
         find_package(OpenGL REQUIRED)
         include_directories(${OPENGL_INCLUDE_DIR})
     endif()
         
-    if(UNIX AND NOT APPLE AND NOT 1)
+    if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
         find_package(X11 REQUIRED)
         include_directories(${X11_INCLUDE_DIR})
         
@@ -35,10 +34,10 @@ if(NOT SERVER_ONLY)
         endif()
     endif()
 
-    if(1 AND USE_GLES2 OR ENABLE_WAYLAND_DEVICE)
-        # find_package(EGL)
+    if(NOT EMSCRIPTEN AND USE_GLES2 OR ENABLE_WAYLAND_DEVICE)
+        find_package(EGL)
         
-        if(EGL_FOUND OR 1)
+        if(EGL_FOUND)
             include_directories(${EGL_INCLUDE_DIR})
         else()
             if(USE_GLES2)
@@ -614,8 +613,8 @@ target_link_libraries(stkirrlicht ${ZLIB_LIBRARY})
 
 if(NOT SERVER_ONLY)
     target_link_libraries(stkirrlicht ${PNG_LIBRARY} ${JPEG_LIBRARY})
-    if(UNIX AND NOT APPLE)
-        # target_link_libraries(stkirrlicht ${X11_X11_LIB} ${X11_Xrandr_LIB})
+    if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
+        target_link_libraries(stkirrlicht ${X11_X11_LIB} ${X11_Xrandr_LIB})
     endif()
         
     if(USE_GLES2 OR ENABLE_WAYLAND_DEVICE)
