@@ -195,7 +195,9 @@ define out. */
  it should be usually the only HW accelerated one. OpenGL is currently disabled
  if using this driver, to avoid problems with the ogl-es emulators.
  */
+#ifdef __EMSCRIPTEN__
 #define _IRR_COMPILE_WITH_OGLES2_
+#endif
 #if defined(NO_IRR_COMPILE_WITH_OGLES2_) && !defined(__EMSCRIPTEN__)
 #undef _IRR_COMPILE_WITH_OGLES2_
 #endif
@@ -213,6 +215,9 @@ define out. */
 /** If you do not wish the engine to be compiled with X11, comment this
 define out. */
 // Only used in LinuxDevice.
+#ifndef __EMSCRIPTEN__
+#define _IRR_COMPILE_WITH_X11_
+#endif
 #ifdef NO_IRR_COMPILE_WITH_X11_
 #undef _IRR_COMPILE_WITH_X11_
 #endif

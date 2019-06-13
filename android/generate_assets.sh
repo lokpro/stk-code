@@ -43,7 +43,7 @@ export SOUND_SAMPLE=32000
 
 export RUN_OPTIMIZE_SCRIPT=0
 export DECREASE_QUALITY=1
-export CONVERT_TO_JPG=1
+export CONVERT_TO_JPG=0
 
 export CONVERT_TO_JPG_BLACKLIST="data/models/traffic_light.png"
 

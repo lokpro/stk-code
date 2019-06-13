@@ -10,14 +10,20 @@ Module.preRun.push(function() {
   window.userDataSync = function userDataSync() {
     function doSync() {
       window.isSyncing = true;
+      console.log("Syncing");
       window.userDataMount.type.syncfs(false, function(err) {
         if (err) {
           throw err;
         }
-        if (window.needsSync) doSync();
-        else window.isSyncing = false;
+        console.log("Sync'd");
+        if (window.needsSync) {
+          console.log("More syncing needed");
+          doSync();
+        } else window.isSyncing = false;
       });
     }
+
+    console.log("Sync requested");
 
     if (!window.isSyncing) {
       doSync();

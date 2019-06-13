@@ -32,7 +32,7 @@
 #endif
 
 // Set to 1 or 2 when building squish to use SSE or SSE2 instructions.
-#ifndef SQUISH_USE_SSE
+#if !defined(SQUISH_USE_SSE) || defined(__EMSCRIPTEN__)
 #define SQUISH_USE_SSE 0
 #endif
 
@@ -40,10 +40,8 @@
 #if SQUISH_USE_ALTIVEC && SQUISH_USE_SSE
 #error "Cannot enable both Altivec and SSE!"
 #endif
-#if SQUISH_USE_ALTIVEC || SQUISH_USE_SSE
+#if !defined(__EMSCRIPTEN__) && (SQUISH_USE_ALTIVEC || SQUISH_USE_SSE)
 #define SQUISH_USE_SIMD 1
-#define SQUISH_USE_SIMD 0
-#define SQUISH_USE_SSE 0
 #else
 #define SQUISH_USE_SIMD 0
 #endif
