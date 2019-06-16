@@ -235,7 +235,8 @@ private:
 public:
     static void create();
     static void destroy();
-    static void* mainLoop(void *obj);
+    static bool mainLoop(void *obj);
+    static void* mainLoopThread(void *obj);
     void queue(SFXCommands command, SFXBase *sfx=NULL);
     void queue(SFXCommands command, SFXBase *sfx, float f);
     void queue(SFXCommands command, SFXBase *sfx, const Vec3 &p);

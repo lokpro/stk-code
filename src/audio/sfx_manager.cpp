@@ -114,7 +114,7 @@ SFXManager::SFXManager()
         // The thread is created even if there atm sfx are disabled
         // (since the user might enable it later).
         int error = pthread_create(m_thread_id.getData(), &attr,
-				 &SFXManager::mainLoop, this);
+				 &SFXManager::mainLoopThread, this);
         if (error)
         {
 		m_thread_id.lock();
@@ -371,17 +371,25 @@ void SFXManager::stopThread()
     }
 }   // stopThread
 
+void* SFXManager::mainLoopThread(void *obj) {
+  SFXManager *me = (SFXManager*)obj;
+  bool returnVal = true;
+  while(returnVal) {
+    returnVal = me->mainLoop(me);
+  }
+}
+
 //----------------------------------------------------------------------------
 /** This loops runs in a different threads, and starts sfx to be played.
  *  This can sometimes take up to 5 ms, so it needs to be handled in a thread
  *  in order to avoid rendering delays.
  *  \param obj A pointer to the SFX singleton.
  */
-void* SFXManager::mainLoop(void *obj)
+bool SFXManager::mainLoop(void *obj)
 {
 #ifdef ENABLE_SOUND
   if (!UserConfigParams::m_enable_sound)
-    return NULL;
+    return true;
         
   #ifndef __EMSCRIPTEN__
   VS::setThreadName("SFXManager");
@@ -432,7 +440,7 @@ void* SFXManager::mainLoop(void *obj)
   if (current->m_command == SFX_EXIT)
     {
       delete current;
-      return NULL;
+      return false;
     }
   me->m_sfx_commands.unlock();
   PROFILER_POP_CPU_MARKER();
@@ -508,9 +516,11 @@ void* SFXManager::mainLoop(void *obj)
       // Wait some time to let other threads run, then queue an
       // update event to keep music playing.
 
-      // double t = StkTime::getRealTime();
-      // StkTime::sleep(1);
-      // t = StkTime::getRealTime() - t;
+      #ifndef __EMSCRIPTEN__
+      double t = StkTime::getRealTime();
+      StkTime::sleep(1);
+      t = StkTime::getRealTime() - t;
+      #endif
 
       me->queue(SFX_UPDATE, (SFXBase*)NULL, float(0));
     }
@@ -520,7 +530,7 @@ void* SFXManager::mainLoop(void *obj)
   PROFILER_POP_CPU_MARKER();
   // while
 #endif
-  return NULL;
+  return true;
 }   // mainLoop
 
 //----------------------------------------------------------------------------
