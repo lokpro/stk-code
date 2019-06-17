@@ -132,6 +132,35 @@ void OptionsScreenUI::loadedFromFile()
         minimap_options->m_properties[GUIEngine::PROP_MIN_VALUE] = "1";
     }
     minimap_options->m_properties[GUIEngine::PROP_MAX_VALUE] = "2";
+
+    GUIEngine::SpinnerWidget* font_size = getWidget<GUIEngine::SpinnerWidget>("font_size");
+    assert( font_size != NULL );
+
+    font_size->clearLabels();
+    font_size->addLabel(L"Extremely small");
+    //I18N: In the UI options, Very small font size
+    font_size->addLabel(_("Very small"));
+    //I18N: In the UI options, Small font size
+    font_size->addLabel(_("Small"));
+    //I18N: In the UI options, Medium font size
+    font_size->addLabel(_("Medium"));
+    //I18N: In the UI options, Large font size
+    font_size->addLabel(_("Large"));
+    //I18N: In the UI options, Very large font size
+    font_size->addLabel(_("Very large"));
+    font_size->addLabel(L"Extremely large");
+
+    if (UserConfigParams::m_artist_debug_mode)
+    {
+        // Only show extreme size in artist debug mode
+        font_size->m_properties[GUIEngine::PROP_MIN_VALUE] = "0";
+        font_size->m_properties[GUIEngine::PROP_MAX_VALUE] = "6";
+    }
+    else
+    {
+        font_size->m_properties[GUIEngine::PROP_MIN_VALUE] = "1";
+        font_size->m_properties[GUIEngine::PROP_MAX_VALUE] = "5";
+    }
 }   // loadedFromFile
 
 // -----------------------------------------------------------------------------
@@ -161,11 +190,23 @@ void OptionsScreenUI::init()
     }
     minimap_options->setValue(UserConfigParams::m_minimap_display);
     
+    bool in_game = StateManager::get()->getGameState() == GUIEngine::INGAME_MENU;
+    
     GUIEngine::SpinnerWidget* font_size = getWidget<GUIEngine::SpinnerWidget>("font_size");
     assert( font_size != NULL );
-    
-    font_size->setValue((int)roundf(UserConfigParams::m_fonts_size));
-    m_prev_font_size = UserConfigParams::m_fonts_size;
+
+    m_prev_font_size = UserConfigParams::m_font_size;
+    int size_int = (int)roundf(UserConfigParams::m_font_size);
+    if (size_int < 0 || size_int > 6)
+        size_int = 3;
+
+    if (!UserConfigParams::m_artist_debug_mode &&
+        (size_int < 1 || size_int > 5))
+        size_int = 3;
+
+    font_size->setValue(size_int);
+    UserConfigParams::m_font_size = font_size->getValue();
+    font_size->setActive(!in_game);
 
     // ---- video modes
     CheckBoxWidget* splitscreen_method = getWidget<CheckBoxWidget>("split_screen_horizontally");
@@ -173,7 +214,6 @@ void OptionsScreenUI::init()
     splitscreen_method->setState(UserConfigParams::split_screen_horizontally);
 
     //Forbid changing this setting in game
-    bool in_game = StateManager::get()->getGameState() == GUIEngine::INGAME_MENU;
     splitscreen_method->setActive(!in_game);
 
     CheckBoxWidget* fps = getWidget<CheckBoxWidget>("showfps");
@@ -258,7 +298,7 @@ void OptionsScreenUI::eventCallback(Widget* widget, const std::string& name, con
     {
         GUIEngine::SpinnerWidget* font_size = getWidget<GUIEngine::SpinnerWidget>("font_size");
         assert( font_size != NULL );
-        UserConfigParams::m_fonts_size = font_size->getValue();
+        UserConfigParams::m_font_size = font_size->getValue();
     }
     else if (name == "split_screen_horizontally")
     {
@@ -280,7 +320,7 @@ void OptionsScreenUI::eventCallback(Widget* widget, const std::string& name, con
 
 void OptionsScreenUI::tearDown()
 {
-    if (m_prev_font_size != UserConfigParams::m_fonts_size)
+    if (m_prev_font_size != UserConfigParams::m_font_size)
     {
         irr_driver->sameRestart();
     }

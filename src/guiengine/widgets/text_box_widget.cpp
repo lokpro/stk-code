@@ -22,7 +22,8 @@
 #include "guiengine/widgets/CGUIEditBox.hpp"
 #include "utils/ptr_vector.hpp"
 #include "utils/translation.hpp"
-#include "utils/utf8/unchecked.h"
+#include "utils/utf8/core.h"
+#include "utils/utf8.h"
 
 #include <IGUIElement.h>
 #include <IGUIEnvironment.h>
@@ -39,9 +40,8 @@ public:
 
     MyCGUIEditBox(const wchar_t* text, bool border, gui::IGUIEnvironment* environment,
                  gui:: IGUIElement* parent, s32 id, const core::rect<s32>& rectangle) :
-        CGUIEditBox(text, border, environment, parent, id, rectangle, translations->isRTLLanguage())
+        CGUIEditBox(text, border, environment, parent, id, rectangle)
     {
-        if (translations->isRTLLanguage()) setTextAlignment(irr::gui::EGUIA_LOWERRIGHT, irr::gui::EGUIA_CENTER);
     }
 
     void addListener(GUIEngine::ITextBoxWidgetListener* listener)
@@ -68,8 +68,7 @@ public:
             if (m_listeners[n].onEnterPressed(Text))
             {
                 handled = true;
-                Text = L"";
-                CursorPos = MarkBegin = MarkEnd = 0;
+                setText(L"");
             }
         }
         return handled;
@@ -267,19 +266,51 @@ ANDROID_EDITTEXT_CALLBACK(ANDROID_PACKAGE_CALLBACK_NAME)
     if (text == NULL)
         return;
 
-    const char* utf8_text = env->GetStringUTFChars(text, NULL);
-    if (utf8_text == NULL)
+    const uint16_t* utf16_text = (const uint16_t*)env->GetStringChars(text, NULL);
+    if (utf16_text == NULL)
         return;
+    const size_t len = env->GetStringLength(text);
+    // Android use 32bit wchar_t and java use utf16 string
+    // We should not use the modified utf8 from java as it fails for emoji
+    // because it's larger than 16bit
+    std::u32string to_editbox;
 
-    // Use utf32 for emoji later
-    static_assert(sizeof(wchar_t) == sizeof(uint32_t), "Invalid wchar size");
-    std::vector<wchar_t> utf32line;
-    utf8::unchecked::utf8to32(utf8_text, utf8_text + strlen(utf8_text),
-        back_inserter(utf32line));
-    utf32line.push_back(0);
+    std::vector<int> mappings;
+    int pos = 0;
+    mappings.push_back(pos++);
+    for (unsigned i = 0; i < len; i++)
+    {
+        if (utf8::internal::is_lead_surrogate(utf16_text[i]))
+        {
+            int duplicated_pos = pos++;
+            mappings.push_back(duplicated_pos);
+            mappings.push_back(duplicated_pos);
+            i++;
+        }
+        else
+            mappings.push_back(pos++);
+    }
 
-    core::stringw to_editbox(&utf32line[0]);
-    env->ReleaseStringUTFChars(text, utf8_text);
+    // Correct start / end position for utf16
+    if (start < (int)mappings.size())
+        start = mappings[start];
+    if (end < (int)mappings.size())
+        end = mappings[end];
+    if (composing_start < (int)mappings.size())
+        composing_start = mappings[composing_start];
+    if (composing_end < (int)mappings.size())
+        composing_end = mappings[composing_end];
+
+    try
+    {
+        utf8::utf16to32(utf16_text, utf16_text + len,
+            back_inserter(to_editbox));
+    }
+    catch (std::exception& e)
+    {
+        (void)e;
+    }
+    env->ReleaseStringChars(text, utf16_text);
 
     GUIEngine::addGUIFunctionBeforeRendering([widget_id, to_editbox, start,
         end, composing_start, composing_end]()

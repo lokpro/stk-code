@@ -149,7 +149,16 @@ void ServerSelection::init()
     for (unsigned i = 0; i < track_manager->getNumberOfTracks(); i++)
     {
         Track* t = track_manager->getTrack(i);
-        video::ITexture* tex =irr_driver->getTexture(t->getScreenshotFile());
+        video::ITexture* tex = NULL;
+        if (t->isInternal())
+        {
+            tex = irr_driver->getTexture(file_manager
+                ->getAsset(FileManager::GUI_ICON, "main_help.png"));
+        }
+        else
+        {
+            tex = irr_driver->getTexture(t->getScreenshotFile());
+        }
         if (!tex)
         {
             tex = irr_driver->getTexture(file_manager
@@ -240,6 +249,13 @@ void ServerSelection::loadList()
             core::stringw distance = _("Unknown");
             if (!(server->getDistance() < 0.0f))
                 distance = StringUtils::toWString(server->getDistance());
+            const core::stringw& flag = StringUtils::getCountryFlag(
+                server->getCountryCode());
+            if (!flag.empty())
+            {
+                distance += L" ";
+                distance += flag;
+            }
             row.push_back(GUIEngine::ListWidget::ListCell(distance, -1, 3,
                 true));
         }

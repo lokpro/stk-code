@@ -85,8 +85,10 @@
 #include "tracks/track_sector.hpp"
 #include "utils/constants.hpp"
 #include "utils/log.hpp" //TODO: remove after debugging is done
-#include "utils/vs.hpp"
 #include "utils/profiler.hpp"
+#include "utils/string_utils.hpp"
+#include "utils/translation.hpp"
+#include "utils/vs.hpp"
 
 #include <ICameraSceneNode.h>
 #include <ISceneManager.h>
@@ -1289,8 +1291,8 @@ float Kart::getShieldTime() const
 // ------------------------------------------------------------------------
 /**
  * Decreases the kart's shield time.
- * \param t The time substracted from the shield timer. If t == 0.0f, the
-             default amout of time is substracted.
+ * \param t The time subtracted from the shield timer. If t == 0.0f, the
+             default amout of time is subtracted.
  */
 void Kart::decreaseShieldTime()
 {
@@ -2774,7 +2776,7 @@ float Kart::applyAirFriction(float engine_power)
 
     if (friction_intensity < 0.0f) friction_intensity = 0.0f;
 
-    // We substract the friction from the engine power
+    // We subtract the friction from the engine power
     // 1)This is the logical behavior
     // 2)That way, engine boosts remain useful at high speed
     // 3)It helps heavier karts, who have an higher engine power
@@ -3422,7 +3424,7 @@ btQuaternion Kart::getVisualRotation() const
  *  output.
  *  \param text The text to display
  */
-void Kart::setOnScreenText(const wchar_t *text)
+void Kart::setOnScreenText(const core::stringw& text)
 {
 #ifndef SERVER_ONLY
     if (ProfileWorld::isNoGraphics())

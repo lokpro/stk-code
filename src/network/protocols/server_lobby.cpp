@@ -42,7 +42,7 @@
 #include "network/stk_host.hpp"
 #include "network/stk_peer.hpp"
 #include "online/online_profile.hpp"
-#include "online/request_manager.hpp"
+#include "online/xml_request.hpp"
 #include "race/race_manager.hpp"
 #include "states_screens/online/networking_lobby.hpp"
 #include "states_screens/race_result_gui.hpp"
@@ -51,6 +51,7 @@
 #include "tracks/track_manager.hpp"
 #include "utils/log.hpp"
 #include "utils/random_generator.hpp"
+#include "utils/string_utils.hpp"
 #include "utils/time.hpp"
 
 #include <algorithm>
@@ -1574,7 +1575,7 @@ void ServerLobby::finishedLoadingLiveJoinClient(Event* event)
     nim->saveCompleteState(ns);
     nim->addLiveJoinPeer(peer);
 
-    w->saveCompleteState(ns);
+    w->saveCompleteState(ns, peer.get());
     if (race_manager->supportsLiveJoining())
     {
         // Only needed in non-racing mode as no need players can added after

@@ -24,7 +24,10 @@
 #include "network/protocols/client_lobby.hpp"
 #include "network/stk_host.hpp"
 #include "states_screens/state_manager.hpp"
+#include "states_screens/online/networking_lobby.hpp"
 #include "states_screens/online/tracks_screen.hpp"
+#include "utils/string_utils.hpp"
+#include "utils/translation.hpp"
 
 using namespace GUIEngine;
 
@@ -161,6 +164,8 @@ bool NetworkKartSelectionScreen::onEscapePressed()
         }
         return false;
     }
+    // Rewrite the previous server infos saved (game mode, chat lists...)
+    NetworkingLobby::getInstance()->reloadServerInfos();
     return true; // remove the screen
 }   // onEscapePressed
 

@@ -48,6 +48,8 @@
 #include "states_screens/race_gui_multitouch.hpp"
 #include "tracks/track.hpp"
 #include "utils/constants.hpp"
+#include "utils/string_utils.hpp"
+#include "utils/translation.hpp"
 
 #include <ICameraSceneNode.h>
 
@@ -180,6 +182,20 @@ RaceGUIBase::~RaceGUIBase()
     // remove it from the scene graph.
     delete m_referee;
 }   // ~RaceGUIBase
+
+//-----------------------------------------------------------------------------
+void RaceGUIBase::recreateMultitouchGUI()
+{
+    if (!m_multitouch_gui)
+        return;
+        
+    m_multitouch_gui->recreate();
+    calculateMinimapSize();
+    
+    Track* track = Track::getCurrentTrack();
+    assert(track != NULL);
+    track->updateMiniMapScale();
+}  // recreateMultitouchGUI
 
 //-----------------------------------------------------------------------------
 /** Creates the 2D vertices for a regular polygon. Adopted from Irrlicht.
@@ -401,7 +417,7 @@ void RaceGUIBase::drawPowerupIcons(const AbstractKart* kart,
     {
         gui::ScalableFont* font = GUIEngine::getHighresDigitFont();
         core::rect<s32> pos(x2+nSize, y1, x2+nSize+nSize, y1+nSize);
-        font->setScale(scale);
+        font->setScale(scale / (float)font->getDimension(L"X").Height * 64.0f);
         font->draw(core::stringw(L"x")+StringUtils::toWString(many_powerups),
             pos, video::SColor(255, 255, 255, 255));
         font->setScale(1.0f);
@@ -857,12 +873,15 @@ void RaceGUIBase::drawGlobalPlayerIcons(int bottom_margin)
             pos_top.UpperLeftCorner.X  = x_base;
 
             static video::SColor color = video::SColor(255, 255, 255, 255);
-            pos_top.LowerRightCorner   = pos_top.UpperLeftCorner;
-
             //I18N: When some GlobalPlayerIcons are hidden, write "Top 10" to show it
+            core::stringw top_text = _("Top %i", position - 1);
+            core::dimension2du dim = font->getDimension(top_text.c_str());
+            pos_top.LowerRightCorner   = pos_top.UpperLeftCorner;
+            pos_top.LowerRightCorner.X += dim.Width;
+            pos_top.LowerRightCorner.Y += dim.Height;
             font->setBlackBorder(true);
             font->setThinBorder(true);
-            font->draw(_("Top %i", position-1 ), pos_top, color);
+            font->draw(top_text, pos_top, color);
             font->setThinBorder(false);
             font->setBlackBorder(false);
 
@@ -871,10 +890,13 @@ void RaceGUIBase::drawGlobalPlayerIcons(int bottom_margin)
 
         if (info.m_text.size() > 0)
         {
-            core::rect<s32> pos(x+ICON_PLAYER_WIDTH, y+5,
-                                x+ICON_PLAYER_WIDTH, y+5);
+            core::dimension2du dim = font->getDimension(info.m_text.c_str());
+
+            core::rect<s32> pos(x + ICON_PLAYER_WIDTH, y + 5,
+                                x + ICON_PLAYER_WIDTH + dim.Width, y + 5 + dim.Height);
             if (info.m_outlined_font)
             {
+
                 GUIEngine::getOutlineFont()->draw(info.m_text, pos,
                     info.m_color, false, false, NULL, true/*ignore RTL*/);
             }
@@ -891,8 +913,10 @@ void RaceGUIBase::drawGlobalPlayerIcons(int bottom_margin)
 
         if (info.special_title.size() > 0)
         {
-            core::rect<s32> pos(x+ICON_PLAYER_WIDTH, y+5,
-                                x+ICON_PLAYER_WIDTH, y+5);
+            core::dimension2du dim = font->getDimension(info.special_title.c_str());
+
+            core::rect<s32> pos(x + ICON_PLAYER_WIDTH, y + 5,
+                x + ICON_PLAYER_WIDTH + dim.Width, y + 5 + dim.Height);
             core::stringw s(info.special_title.c_str());
             font->setBlackBorder(true);
             font->setThinBorder(true);

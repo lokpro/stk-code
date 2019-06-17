@@ -20,9 +20,9 @@
 
 #include "guiengine/screen.hpp"
 #include "guiengine/widgets/text_box_widget.hpp"
+#include "GlyphLayout.h"
 #include <map>
 #include <memory>
-#include <tuple>
 #include <utility>
 
 class InputDevice;
@@ -69,7 +69,8 @@ private:
     uint64_t m_ping_update_timer;
     std::map<std::string, LobbyPlayer> m_player_names;
     std::shared_ptr<Server> m_joined_server;
-    std::vector<core::stringw> m_server_info;
+
+    std::vector<gui::GlyphLayout> m_server_info;
     int m_server_info_height;
 
     core::stringw m_start_text, m_ready_text, m_live_join_text,
@@ -80,7 +81,8 @@ private:
     unsigned m_min_start_game_players;
 
     bool m_allow_change_team, m_has_auto_start_in_server,
-        m_server_configurable, m_client_live_joinable;
+        m_server_configurable, m_client_live_joinable,
+        m_reload_server_info;
 
     video::ITexture* m_config_texture;
     video::ITexture* m_spectate_texture;
@@ -134,6 +136,7 @@ public:
         m_joined_server = server;
         m_server_info.clear();
     }
+    void updateServerInfos();
     void updatePlayers();
     void openSplitscreenDialog(InputDevice* device);
     void addSplitscreenPlayer(irr::core::stringw name);
@@ -142,6 +145,7 @@ public:
                             float start_timeout, unsigned server_max_player);
     void setStartingTimerTo(float t);
     void toggleServerConfigButton(bool val)    { m_server_configurable = val; }
+    void reloadServerInfos()                   { m_reload_server_info = true; }
 };   // class NetworkingLobby
 
 #endif

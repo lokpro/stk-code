@@ -28,6 +28,7 @@
 #include "items/item.hpp"
 #include "karts/kart_properties.hpp"
 #include "utils/log.hpp"
+#include "utils/string_utils.hpp"
 
 STKConfig* stk_config=0;
 float STKConfig::UNDEFINED = -99.9f;
@@ -505,6 +506,7 @@ void STKConfig::getAllData(const XMLNode * root)
     {
         fonts_list->get("normal-ttf", &m_normal_ttf);
         fonts_list->get("digit-ttf",  &m_digit_ttf );
+        fonts_list->get("color-emoji-ttf", &m_color_emoji_ttf);
     }
 
     if (const XMLNode *skinning = root->getNode("skinning"))

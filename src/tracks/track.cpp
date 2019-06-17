@@ -209,11 +209,10 @@ bool Track::operator<(const Track &other) const
 }   // operator<
 
 //-----------------------------------------------------------------------------
-/** Returns the name of the track, which is e.g. displayed on the screen.
-    \note this is the LTR name, invoke fribidi as needed. */
+/** Returns the name of the track, which is e.g. displayed on the screen. */
 core::stringw Track::getName() const
 {
-    core::stringw translated = _LTR(m_name.c_str());
+    core::stringw translated = _(m_name.c_str());
     int index = translated.find("|");
     if(index>-1)
     {
@@ -1156,27 +1155,36 @@ void Track::loadMinimap()
 {
 #ifndef SERVER_ONLY
     //Create the minimap resizing it as necessary.
-    m_mini_map_size = World::getWorld()->getRaceGUI()->getMiniMapSize();
+    core::dimension2du mini_map_size = World::getWorld()->getRaceGUI()->getMiniMapSize();
 
     //Use twice the size of the rendered minimap to reduce significantly aliasing
-    m_render_target = Graph::get()->makeMiniMap(m_mini_map_size * 2,
+    m_render_target = Graph::get()->makeMiniMap(mini_map_size * 2,
         "minimap::" + m_ident, video::SColor(127, 255, 255, 255),
         m_minimap_invert_x_z);
-    if (!m_render_target) return;
 
+    updateMiniMapScale();
+#endif
+}   // loadMinimap
+
+// ----------------------------------------------------------------------------
+void Track::updateMiniMapScale()
+{
+    if (!m_render_target)
+        return;
+
+    core::dimension2du mini_map_size = World::getWorld()->getRaceGUI()->getMiniMapSize();
     core::dimension2du mini_map_texture_size = m_render_target->getTextureSize();
 
-    if(mini_map_texture_size.Width) 
-        m_minimap_x_scale = float(m_mini_map_size.Width) / float(mini_map_texture_size.Width);
+    if(mini_map_texture_size.Width)
+        m_minimap_x_scale = float(mini_map_size.Width) / float(mini_map_texture_size.Width);
     else
         m_minimap_x_scale = 0;
 
     if(mini_map_texture_size.Height) 
-        m_minimap_y_scale = float(m_mini_map_size.Height) / float(mini_map_texture_size.Height);
+        m_minimap_y_scale = float(mini_map_size.Height) / float(mini_map_texture_size.Height);
     else
         m_minimap_y_scale = 0;
-#endif
-}   // loadMinimap
+}
 
 // ----------------------------------------------------------------------------
 /** Loads the main track model (i.e. all other objects contained in the

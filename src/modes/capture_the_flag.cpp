@@ -33,6 +33,8 @@
 #include "states_screens/race_gui.hpp"
 #include "tracks/track.hpp"
 #include "tracks/track_object_manager.hpp"
+#include "utils/string_utils.hpp"
+#include "utils/translation.hpp"
 
 #include <algorithm>
 
@@ -535,9 +537,9 @@ const std::string& CaptureTheFlag::getIdent() const
 }   // getIdent
 
 // ----------------------------------------------------------------------------
-void CaptureTheFlag::saveCompleteState(BareNetworkString* bns)
+void CaptureTheFlag::saveCompleteState(BareNetworkString* bns, STKPeer* peer)
 {
-    FreeForAll::saveCompleteState(bns);
+    FreeForAll::saveCompleteState(bns, peer);
     bns->addUInt32(m_red_scores).addUInt32(m_blue_scores);
 }   // saveCompleteState
 

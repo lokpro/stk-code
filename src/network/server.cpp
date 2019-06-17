@@ -85,6 +85,14 @@ Server::Server(const XMLNode& server_info) : m_supports_encrytion(true)
         player_info->get("rank", &std::get<0>(t));
         player_info->get("username", &username);
         std::get<1>(t) = StringUtils::utf8ToWide(username);
+        std::string country;
+        player_info->get("country-code", &country);
+        const core::stringw& flag = StringUtils::getCountryFlag(country);
+        if (!flag.empty())
+        {
+            std::get<1>(t) += L" ";
+            std::get<1>(t) += flag;
+        }
         m_lower_case_player_names += StringUtils::toLowerCase(username);
         player_info->get("scores", &std::get<2>(t));
         float time_played = 0.0f;
@@ -186,4 +194,19 @@ Track* Server::getCurrentTrack() const
     if (!m_current_track.empty())
         return track_manager->getTrack(m_current_track);
     return NULL;
-}
+}   // getCurrentTrack
+
+// ----------------------------------------------------------------------------
+bool Server::searchByName(const std::string& lower_case_word)
+{
+    auto list = StringUtils::split(lower_case_word, ' ', false);
+    bool server_name_found = true;
+    for (auto& word : list)
+    {
+        const std::string& for_search = m_lower_case_name +
+            m_lower_case_player_names;
+        server_name_found = server_name_found &&
+            for_search.find(word) != std::string::npos;
+    }
+    return server_name_found;
+}   // searchByName

@@ -532,7 +532,7 @@ namespace UserConfigParams
             "multitouch interface."));
 
     PARAM_PREFIX IntUserConfigParam         m_screen_keyboard
-            PARAM_DEFAULT( IntUserConfigParam(0, "screen_keyboard_mode",
+            PARAM_DEFAULT( IntUserConfigParam(1, "screen_keyboard_mode",
             &m_multitouch_group,
             "Screen keyboard mode: 0 = disabled, 1 = enabled if no hardware "
             "keyboard, 2 = always enabled") );
@@ -632,7 +632,7 @@ namespace UserConfigParams
         &m_video_group, "Determines if popup message about too old drivers should be displayed."));
     PARAM_PREFIX FloatUserConfigParam       m_scale_rtts_factor
         PARAM_DEFAULT(FloatUserConfigParam(1.0f, "scale_rtts_factor",
-        &m_video_group, "Allows to increase performance by setting lower RTTs "
+        &m_video_group, "Allows one to increase performance by setting lower RTTs "
                         "resolution. Value should be smaller or equal to 1.0"));
     PARAM_PREFIX IntUserConfigParam         m_max_texture_size
         PARAM_DEFAULT(IntUserConfigParam(512, "max_texture_size",
@@ -643,8 +643,8 @@ namespace UserConfigParams
         PARAM_DEFAULT(BoolUserConfigParam(false, "hq_mipmap",
         &m_video_group, "Generate mipmap for textures using "
                         "high quality method with SSE"));
-    PARAM_PREFIX FloatUserConfigParam         m_fonts_size
-        PARAM_DEFAULT(  FloatUserConfigParam(3, "fonts_size",
+    PARAM_PREFIX FloatUserConfigParam         m_font_size
+        PARAM_DEFAULT(  FloatUserConfigParam(3, "font_size",
         &m_video_group,"The size of fonts. 0 is the smallest and 6 is the biggest") );
 
     // ---- Recording
@@ -1021,7 +1021,7 @@ namespace UserConfigParams
 
     PARAM_PREFIX StringUserConfigParam      m_commandline
             PARAM_DEFAULT( StringUserConfigParam("", "commandline",
-                             "Allows to set commandline args in config file") );
+                             "Allows one to set commandline args in config file") );
 
     // TODO? implement blacklist for new irrlicht device and GUI
     PARAM_PREFIX std::vector<std::string>   m_blacklist_res;

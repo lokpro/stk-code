@@ -44,7 +44,9 @@
 #include "race/race_manager.hpp"
 #include "states_screens/state_manager.hpp"
 #include "utils/profiler.hpp"
+#include "utils/string_utils.hpp"
 #include "utils/time.hpp"
+#include "utils/translation.hpp"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -107,7 +109,7 @@ MainLoop::~MainLoop()
 //-----------------------------------------------------------------------------
 /** Returns the current dt, which guarantees a limited frame rate. If dt is
  *  too low (the frame rate too high), the process will sleep to reach the
- *  maxium frame rate.
+ *  maximum frame rate.
  */
 float MainLoop::getLimitedDt()
 {

@@ -49,6 +49,8 @@
 #include "network/server_config.hpp"
 #include "network/stk_host.hpp"
 #include "network/stk_peer.hpp"
+#include "online/online_profile.hpp"
+#include "online/xml_request.hpp"
 #include "states_screens/online/networking_lobby.hpp"
 #include "states_screens/online/network_kart_selection.hpp"
 #include "states_screens/race_result_gui.hpp"
@@ -56,6 +58,8 @@
 #include "tracks/track.hpp"
 #include "tracks/track_manager.hpp"
 #include "utils/log.hpp"
+#include "utils/string_utils.hpp"
+#include "utils/translation.hpp"
 
 // ============================================================================
 /** The protocol that manages starting a race with the server. It uses a 
@@ -397,7 +401,10 @@ void ClientLobby::update(int ticks)
         {
             ns->addUInt32(id).addUInt32(0);
             if (id != 0)
-                ns->encodeString(PlayerManager::getCurrentOnlineUserName());
+            {
+                ns->encodeString(
+                    PlayerManager::getCurrentOnlineProfile()->getUserName());
+            }
         }
 
         rest->encodeString(ServerConfig::m_private_server_password)
@@ -641,35 +648,35 @@ void ClientLobby::handleServerInfo(Event* event)
     // At least 6 bytes should remain now
     if (!checkDataSize(event, 6)) return;
 
+    core::stringw str, total_lines;
     if (!m_first_connect)
     {
-        NetworkingLobby::getInstance()
-            ->addMoreServerInfo(L"--------------------");
+        total_lines = L"--------------------";
+        total_lines += L"\n";
     }
     m_first_connect = false;
 
     NetworkString &data = event->data();
     // Add server info
-    core::stringw str, each_line;
     uint8_t u_data;
     data.decodeStringW(&str);
 
     //I18N: In the networking lobby
-    each_line = _("Server name: %s", str);
-    NetworkingLobby::getInstance()->addMoreServerInfo(each_line);
+    total_lines += _("Server name: %s", str);
+    total_lines += L"\n";
 
     u_data = data.getUInt8();
     const core::stringw& difficulty_name =
         race_manager->getDifficultyName((RaceManager::Difficulty)u_data);
     race_manager->setDifficulty((RaceManager::Difficulty)u_data);
     //I18N: In the networking lobby
-    each_line = _("Difficulty: %s", difficulty_name);
-    NetworkingLobby::getInstance()->addMoreServerInfo(each_line);
+    total_lines += _("Difficulty: %s", difficulty_name);
+    total_lines += L"\n";
 
     unsigned max_player = data.getUInt8();
     //I18N: In the networking lobby
-    each_line = _("Max players: %d", (int)max_player);
-    NetworkingLobby::getInstance()->addMoreServerInfo(each_line);
+    total_lines += _("Max players: %d", (int)max_player);
+    total_lines += L"\n";
 
     // Reserved for extra spectators
     u_data = data.getUInt8();
@@ -681,8 +688,8 @@ void ClientLobby::handleServerInfo(Event* event)
 
     //I18N: In the networking lobby
     core::stringw mode_name = ServerConfig::getModeName(u_data);
-    each_line = _("Game mode: %s", mode_name);
-    NetworkingLobby::getInstance()->addMoreServerInfo(each_line);
+    total_lines += _("Game mode: %s", mode_name);
+    total_lines += L"\n";
 
     uint8_t extra_server_info = data.getUInt8();
     bool grand_prix_started = false;
@@ -699,8 +706,8 @@ void ClientLobby::handleServerInfo(Event* event)
             core::stringw sgt = u_data == 0 ? tl : gl;
             m_game_setup->setSoccerGoalTarget(u_data != 0);
             //I18N: In the networking lobby
-            each_line = _("Soccer game type: %s", sgt);
-            NetworkingLobby::getInstance()->addMoreServerInfo(each_line);
+            total_lines += _("Soccer game type: %s", sgt);
+            total_lines += L"\n";
             break;
         }
         case 2:
@@ -709,9 +716,9 @@ void ClientLobby::handleServerInfo(Event* event)
             grand_prix_started = cur_gp_track != 0;
             unsigned total_gp_track = data.getUInt8();
             m_game_setup->setGrandPrixTrack(total_gp_track);
-            each_line = _("Grand prix progress: %d / %d", cur_gp_track,
+            total_lines += _("Grand prix progress: %d / %d", cur_gp_track,
                 total_gp_track);
-            NetworkingLobby::getInstance()->addMoreServerInfo(each_line);
+            total_lines += L"\n";
             break;
         }
     }
@@ -724,13 +731,16 @@ void ClientLobby::handleServerInfo(Event* event)
     // MOTD
     core::stringw motd;
     data.decodeString16(&motd);
-    const std::vector<core::stringw>& motd_line = StringUtils::split(motd,
-        '\n');
-    if (!motd_line.empty())
-    {
-        for (const core::stringw& motd : motd_line)
-            NetworkingLobby::getInstance()->addMoreServerInfo(motd);
-    }
+    if (!motd.empty())
+        total_lines += motd;
+
+    // Remove last newline added, network lobby will add it back later after
+    // removing old server info (with chat)
+    if (total_lines[total_lines.size() - 1] == L'\n')
+        total_lines.erase(total_lines.size() - 1);
+
+    NetworkingLobby::getInstance()->addMoreServerInfo(total_lines);
+
     bool server_config = data.getUInt8() == 1;
     NetworkingLobby::getInstance()->toggleServerConfigButton(server_config);
     m_server_live_joinable = data.getUInt8() == 1;
@@ -1338,7 +1348,7 @@ void ClientLobby::sendChat(irr::core::stringw text)
         PlayerProfile* player = PlayerManager::getCurrentPlayer();
         if (PlayerManager::getCurrentOnlineState() ==
             PlayerProfile::OS_SIGNED_IN)
-            name = PlayerManager::getCurrentOnlineUserName();
+            name = PlayerManager::getCurrentOnlineProfile()->getUserName();
         else
             name = player->getName();
         chat->encodeString16(name + L": " + text);
