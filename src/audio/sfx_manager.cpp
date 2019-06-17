@@ -400,14 +400,8 @@ bool SFXManager::mainLoop(void *obj)
 
   // Wait till we have an empty sfx in the queue
 
-#ifdef __EMSCRIPTEN__
-  if(
-#else
-  while(
-#endif
-     !(me->m_sfx_commands.getData().empty() ||
-       me->m_sfx_commands.getData().front()->m_command!=SFX_EXIT)
-     ) {
+  if(!(me->m_sfx_commands.getData().empty() ||
+       me->m_sfx_commands.getData().front()->m_command!=SFX_EXIT)) {
     // Signal that the sfx manager can now be deleted.
     // We signal this even before cleaning up memory, since there is no
     // need to keep the user waiting for STK to exit.
@@ -420,6 +414,7 @@ bool SFXManager::mainLoop(void *obj)
 	me->m_sfx_commands.getData().erase(me->m_sfx_commands.getData().begin());
       }
     me->m_sfx_commands.unlock();  
+    return false;
   }
   PROFILER_PUSH_CPU_MARKER("Wait", 255, 0, 0);
   bool empty = me->m_sfx_commands.getData().empty();
