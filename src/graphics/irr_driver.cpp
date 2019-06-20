@@ -86,8 +86,6 @@
  * Should help prevent distros building against an incompatible library.
  */
 
-#define _IRR_COMPILE_WITH_OPENGL_ 1
-
 #if (  IRRLICHT_VERSION_MAJOR < 1                   || \
        IRRLICHT_VERSION_MINOR < 7                   || \
       _IRR_MATERIAL_MAX_TEXTURES_ < 8               || \

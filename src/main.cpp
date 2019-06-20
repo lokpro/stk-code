@@ -1681,13 +1681,13 @@ void initRest()
     {
         Log::fatal("main", "Couldn't initialise irrlicht device. Quitting.\n");
     }
-    Log::info("main", "init'd dirver");
+    Log::verbose("main", "Initialised driver");
     
     StkTime::init();   // grabs the timer object from the irrlicht device
 
     // Now create the actual non-null device in the irrlicht driver
     irr_driver->initDevice();
-    Log::info("main", "real init'd dirver");
+    Log::verbose("main", "Initialised driver device");
 
     // Init GUI
     IrrlichtDevice* device = irr_driver->getDevice();
@@ -1701,9 +1701,9 @@ void initRest()
 
     font_manager = new FontManager();
     font_manager->loadFonts();
-    Log::info("main", "will we oof?");
+    Log::verbose("main", "Initialising GUI Engine");
     GUIEngine::init(device, driver, StateManager::get());
-    Log::info("main", "gui engine init'd");
+    Log::verbose("main", "GUI Engine initialised");
 
     // This only initialises the non-network part of the add-ons manager. The
     // online section of the add-ons manager will be initialised from a
@@ -1744,7 +1744,7 @@ void initRest()
     highscore_manager       = new HighscoreManager     ();
 
 
-    Log::info("main", "created audio stuffs");
+    Log::verbose("main", "Created managers");
 
     // The maximum texture size can not be set earlier, since
     // e.g. the background image needs to be loaded in high res.
@@ -1785,7 +1785,7 @@ void initRest()
         UserConfigParams::m_last_track.revertToDefaults();
 
     race_manager->setTrack(UserConfigParams::m_last_track);
-    Log::info("main", "ended initRest");
+    Log::verbose("main", "Executed initRest");
 
 }   // initRest
 
@@ -1872,7 +1872,7 @@ void main_abort()
 #endif
 
 void noop_tick() {
-  Log::info("main", "tick,tock");
+  Log::info("main", "NOOP Tick! Something probably failed if this is the only output!");
   return;
 }
 
@@ -1882,7 +1882,6 @@ int main(int argc, char *argv[] )
   #ifdef __EMSCRIPTEN__
   emscripten_set_main_loop(noop_tick, 1, false);
   #endif
-// emscripten_cancel_main_loop()
   
     CommandLine::init(argc, argv);
 
@@ -1983,8 +1982,6 @@ int main(int argc, char *argv[] )
         if (!ProfileWorld::isNoGraphics())
             profiler.init();
         initRest();
-	Log::info("main", "init rest'd");
-
 
         input_manager = new InputManager ();
 
@@ -1992,8 +1989,7 @@ int main(int argc, char *argv[] )
         wiimote_manager = new WiimoteManager();
 #endif
 
-
-	Log::info("main", "creating mainloop!");
+	Log::verbose("main", "Creating MainLoop!");
 
         // Get into menu mode initially.
         input_manager->setMode(InputManager::MENU);
@@ -2006,7 +2002,7 @@ int main(int argc, char *argv[] )
         }
         else
             main_loop = new MainLoop(0/*parent_pid*/);
-	Log::info("main", "mainloop init'd!");
+	Log::verbose("main", "MainLoop init'd!");
         material_manager->loadMaterial();
 
         // Preload the explosion effects (explode.png)

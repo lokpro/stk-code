@@ -531,6 +531,11 @@ else()
         set(USE_CRYPTO_OPENSSL ON)
         find_package(OpenSSL REQUIRED)
 
+        if(${OPENSSL_VERSION} VERSION_LESS ${OPENSSL_MINIMUM_VERSION} OR
+            (${OPENSSL_VERSION} VERSION_EQUAL ${OPENSSL_MINIMUM_VERSION} AND ${OPENSSL_VERSION} STRLESS ${OPENSSL_MINIMUM_VERSION}))
+            message(FATAL_ERROR "OpenSSL version found (${OPENSSL_VERSION}) is less then the minimum required (${OPENSSL_MINIMUM_VERSION}), aborting.")
+        endif()
+        include_directories(${OpenSSL_INCLUDE_DIRS})
     else()
         set(USE_CRYPTO_OPENSSL OFF)
 	if (NOT EMSCRIPTEN)

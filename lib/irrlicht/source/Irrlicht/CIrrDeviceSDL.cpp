@@ -24,9 +24,6 @@
 #pragma comment(lib, "SDL.lib")
 #endif // _MSC_VER
 
-
-
-
 namespace irr
 {
 	namespace video
@@ -73,7 +70,6 @@ CIrrDeviceSDL::CIrrDeviceSDL(const SIrrlichtCreationParameters& param)
 
 	// Initialize SDL... Timer for sleep, video for the obvious, and
 	// noparachute prevents SDL from catching fatal errors.
-	os::Printer::log("Init-ing SDL");
 	if (SDL_Init( SDL_INIT_TIMER|SDL_INIT_VIDEO|
 #if defined(_IRR_COMPILE_WITH_JOYSTICK_EVENTS_)
 				SDL_INIT_JOYSTICK|
@@ -83,7 +79,6 @@ CIrrDeviceSDL::CIrrDeviceSDL(const SIrrlichtCreationParameters& param)
 		os::Printer::log( "Unable to initialize SDL!", SDL_GetError());
 		Close = true;
 	}
-	os::Printer::log("Init'd SDL");
 
 #if defined(_IRR_WINDOWS_)
 	SDL_putenv("SDL_VIDEODRIVER=directx");
@@ -183,7 +178,6 @@ bool CIrrDeviceSDL::createWindow()
 			SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, 1 );
 			SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, CreationParams.AntiAlias );
 		}
-		
 		if ( !Screen )
 			Screen = SDL_SetVideoMode( Width, Height, CreationParams.Bits, SDL_Flags );
 		if ( !Screen && CreationParams.AntiAlias>1)
@@ -912,43 +906,49 @@ void CIrrDeviceSDL::createKeyMap()
 	KeyMap.push_back(SKeyMap(SDLK_DELETE, IRR_KEY_DELETE));
 	KeyMap.push_back(SKeyMap(SDLK_HELP, IRR_KEY_HELP));
 
-	KeyMap.push_back(SKeyMap(SDLK_0, IRR_KEY_0));
-	KeyMap.push_back(SKeyMap(SDLK_1, IRR_KEY_1));
-	KeyMap.push_back(SKeyMap(SDLK_2, IRR_KEY_2));
-	KeyMap.push_back(SKeyMap(SDLK_3, IRR_KEY_3));
-	KeyMap.push_back(SKeyMap(SDLK_4, IRR_KEY_4));
-	KeyMap.push_back(SKeyMap(SDLK_5, IRR_KEY_5));
-	KeyMap.push_back(SKeyMap(SDLK_6, IRR_KEY_6));
-	KeyMap.push_back(SKeyMap(SDLK_7, IRR_KEY_7));
-	KeyMap.push_back(SKeyMap(SDLK_8, IRR_KEY_8));
-	KeyMap.push_back(SKeyMap(SDLK_9, IRR_KEY_9));
+#ifdef __EMSCRIPTEN__
+#define DEFINE_KEY(sdl_key, irrlicht_key) KeyMap.push_back(SKeyMap(SDLK_ ## sdl_key, IRR_KEY_ ## irrlicht_key))
+#else
+#define DEFINE_KEY(sdl_key, irrlicht_key) KeyMap.push_back(SKeyMap(SDLK_ ## sdl_key, IRR_KEY_IRR_KEY_ ## irrlicht_key))
+#endif
 
-	KeyMap.push_back(SKeyMap(SDLK_a, IRR_KEY_A));
-	KeyMap.push_back(SKeyMap(SDLK_b, IRR_KEY_B));
-	KeyMap.push_back(SKeyMap(SDLK_c, IRR_KEY_C));
-	KeyMap.push_back(SKeyMap(SDLK_d, IRR_KEY_D));
-	KeyMap.push_back(SKeyMap(SDLK_e, IRR_KEY_E));
-	KeyMap.push_back(SKeyMap(SDLK_f, IRR_KEY_F));
-	KeyMap.push_back(SKeyMap(SDLK_g, IRR_KEY_G));
-	KeyMap.push_back(SKeyMap(SDLK_h, IRR_KEY_H));
-	KeyMap.push_back(SKeyMap(SDLK_i, IRR_KEY_I));
-	KeyMap.push_back(SKeyMap(SDLK_j, IRR_KEY_J));
-	KeyMap.push_back(SKeyMap(SDLK_k, IRR_KEY_K));
-	KeyMap.push_back(SKeyMap(SDLK_l, IRR_KEY_L));
-	KeyMap.push_back(SKeyMap(SDLK_m, IRR_KEY_M));
-	KeyMap.push_back(SKeyMap(SDLK_n, IRR_KEY_N));
-	KeyMap.push_back(SKeyMap(SDLK_o, IRR_KEY_O));
-	KeyMap.push_back(SKeyMap(SDLK_p, IRR_KEY_P));
-	KeyMap.push_back(SKeyMap(SDLK_q, IRR_KEY_Q));
-	KeyMap.push_back(SKeyMap(SDLK_r, IRR_KEY_R));
-	KeyMap.push_back(SKeyMap(SDLK_s, IRR_KEY_S));
-	KeyMap.push_back(SKeyMap(SDLK_t, IRR_KEY_T));
-	KeyMap.push_back(SKeyMap(SDLK_u, IRR_KEY_U));
-	KeyMap.push_back(SKeyMap(SDLK_v, IRR_KEY_V));
-	KeyMap.push_back(SKeyMap(SDLK_w, IRR_KEY_W));
-	KeyMap.push_back(SKeyMap(SDLK_x, IRR_KEY_X));
-	KeyMap.push_back(SKeyMap(SDLK_y, IRR_KEY_Y));
-	KeyMap.push_back(SKeyMap(SDLK_z, IRR_KEY_Z));
+	DEFINE_KEY(0, 0);
+	DEFINE_KEY(1, 1);
+	DEFINE_KEY(2, 2);
+	DEFINE_KEY(3, 3);
+	DEFINE_KEY(4, 4);
+	DEFINE_KEY(5, 5);
+	DEFINE_KEY(6, 6);
+	DEFINE_KEY(7, 7);
+	DEFINE_KEY(8, 8);
+	DEFINE_KEY(9, 9);
+
+	DEFINE_KEY(a, A);
+	DEFINE_KEY(b, B);
+	DEFINE_KEY(c, C);
+	DEFINE_KEY(d, D);
+	DEFINE_KEY(e, E);
+	DEFINE_KEY(f, F);
+	DEFINE_KEY(g, G);
+	DEFINE_KEY(h, H);
+	DEFINE_KEY(i, I);
+	DEFINE_KEY(j, J);
+	DEFINE_KEY(k, K);
+	DEFINE_KEY(l, L);
+	DEFINE_KEY(m, M);
+	DEFINE_KEY(n, N);
+	DEFINE_KEY(o, O);
+	DEFINE_KEY(p, P);
+	DEFINE_KEY(q, Q);
+	DEFINE_KEY(r, R);
+	DEFINE_KEY(s, S);
+	DEFINE_KEY(t, T);
+	DEFINE_KEY(u, U);
+	DEFINE_KEY(v, V);
+	DEFINE_KEY(w, W);
+	DEFINE_KEY(x, X);
+	DEFINE_KEY(y, Y);
+	DEFINE_KEY(z, Z);
 
 	KeyMap.push_back(SKeyMap(SDLK_LSUPER, IRR_KEY_LWIN));
 	KeyMap.push_back(SKeyMap(SDLK_RSUPER, IRR_KEY_RWIN));

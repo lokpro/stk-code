@@ -344,17 +344,16 @@ void MainLoop::run()
 #endif
 
     #ifdef __EMSCRIPTEN__
-    Log::info("MainLoop", "cancelling");
+    Log::verbose("MainLoop", "Cancelling noop loop");
     emscripten_cancel_main_loop();
-    Log::info("MainLoop", "cancelled");
+    Log::verbose("MainLoop", "Cancelled noop loop, Starting main loop");
     emscripten_set_main_loop(tick_loop_proxy, 0, true);
-    Log::info("MainLoop", "set main loop");
+    Log::verbose("MainLoop", "Set main loop");
     #else
     while (!m_abort) {
       tick_loop();
     }
     #endif
-      // while !m_abort
 
 #ifdef WIN32
     if (parent != 0 && parent != INVALID_HANDLE_VALUE)
@@ -364,7 +363,6 @@ void MainLoop::run()
 }   // run
 
 void MainLoop::tick_loop() {
-  //Log::info("MainLoop", "MainLoop ticking");
 #ifdef WIN32
   if (parent != 0 && parent != INVALID_HANDLE_VALUE)
     {
