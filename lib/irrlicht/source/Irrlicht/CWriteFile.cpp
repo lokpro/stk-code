@@ -5,7 +5,6 @@
 #include "CWriteFile.h"
 #include <stdio.h>
 
-
 #if defined(__EMSCRIPTEN__) && !defined(_STK_NO_IDBFS)
 #include <emscripten.h>
 #endif

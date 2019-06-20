@@ -39,8 +39,6 @@
 	#endif
 #endif
 
-
-
 namespace irr
 {
 namespace io

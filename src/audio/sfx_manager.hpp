@@ -227,7 +227,6 @@ private:
                              SFXManager();
     virtual                 ~SFXManager();
 
-    
     void deleteSFX(SFXBase *sfx);
     void queueCommand(SFXCommand *command);
     void reallyPositionListenerNow();

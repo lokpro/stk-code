@@ -253,7 +253,6 @@ void tick_loop_proxy() {
   return main_loop->tick_loop();
 }
 
-
 //-----------------------------------------------------------------------------
 /** Run the actual main loop.
  *  The sequnce in which various parts of STK are updated is:
@@ -433,7 +432,6 @@ void MainLoop::tick_loop() {
 		     irr_driver->getActualScreenSize().Height);
 	}
 #endif
-
 
             // In case the user opened a race pause dialog
             GUIEngine::ModalDialog::dismiss();

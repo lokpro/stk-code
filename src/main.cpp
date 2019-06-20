@@ -1743,7 +1743,6 @@ void initRest()
     attachment_manager      = new AttachmentManager    ();
     highscore_manager       = new HighscoreManager     ();
 
-
     Log::verbose("main", "Created managers");
 
     // The maximum texture size can not be set earlier, since
