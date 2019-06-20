@@ -1,3 +1,5 @@
+# Bad name for it, I know
+
 emconfigure cmake .. \
 -DUSE_GLES2=1 \
 -DBUILD_RECORDER=off \
@@ -19,11 +21,11 @@ emconfigure cmake .. \
 -DUSE_FRIBIDI=0 \
 -DPTHREAD_LIBRARY=/home/heatingdevice/projects/emsdk/emscripten/incoming/system/lib/pthread/library_pthread.c \
 -DOGGVORBIS_VORBISENC_LIBRARY=/home/heatingdevice/projects/vorbis/cmake_build \
--DCMAKE_CXX_FLAGS="-D_REENTRANT -s ALLOW_MEMORY_GROWTH=1 -s DISABLE_EXCEPTION_CATCHING=0 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -I/home/heatingdevice/projects/emsdk/emscripten/incoming/system/include -s WASM=0 -s USE_PTHREADS=0 -s FULL_ES3=1 -s ASSERTIONS=1 -s GL_ASSERTIONS=1 -s GL_DEBUG=1 -O0" \
+-DCMAKE_CXX_FLAGS="-D_REENTRANT -I${EMSCRIPTEN}/system/include" \
 -DEGL_INCLUDE_DIR=/home/heatingdevice/projects/emsdk/emscripten/incoming/system/include \
 -DEGL_LIBRARY=/home/heatingdevice/projects/emsdk/emscripten/incoming/system/include/EGL \
--DCMAKE_INSTALL_PREFIX="./opt/stk"
-
+-DCMAKE_INSTALL_PREFIX="./opt/stk" \
+-DEMSCRIPTEN=1
 
 
 # -DCHECK_ASSETS=off \

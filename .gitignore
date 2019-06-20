@@ -1,3 +1,5 @@
+emscripten-resources/ports/*/library
+
 bld*/
 build*/
 cmake_build*/
