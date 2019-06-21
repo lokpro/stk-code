@@ -34,7 +34,7 @@ if(NOT SERVER_ONLY)
         endif()
     endif()
 
-    if(NOT EMSCRIPTEN AND USE_GLES2 OR ENABLE_WAYLAND_DEVICE)
+    if(NOT EMSCRIPTEN AND (USE_GLES2 OR ENABLE_WAYLAND_DEVICE))
         find_package(EGL)
         
         if(EGL_FOUND)
