@@ -20,6 +20,7 @@
 #include "guiengine/screen_keyboard.hpp"
 #include "utils/string_utils.hpp"
 #include "utils/time.hpp"
+#include "utils/utf8.h"
 
 #include "../../../lib/irrlicht/include/IrrCompileConfig.h"
 #include "../../../lib/irrlicht/source/Irrlicht/CIrrDeviceLinux.h"
@@ -29,6 +30,10 @@
 
 #ifdef ANDROID
 #include "../../../lib/irrlicht/source/Irrlicht/CIrrDeviceAndroid.h"
+#endif
+
+#ifdef _IRR_COMPILE_WITH_WINDOWS_DEVICE_
+#include "../../../lib/irrlicht/source/Irrlicht/CIrrDeviceWin32.h"
 #endif
 
 /*
@@ -172,13 +177,6 @@ _raqm_get_grapheme_break (hb_codepoint_t ch,
 };
 #endif
 
-#if defined(_IRR_COMPILE_WITH_WINDOWS_DEVICE_)
-namespace irr
-{
-    void updateICPos(void* hWnd, s32 x, s32 y, s32 height);
-}
-#endif
-
 //! constructor
 CGUIEditBox::CGUIEditBox(const wchar_t* text, bool border,
         IGUIEnvironment* environment, IGUIElement* parent, s32 id,
@@ -225,7 +223,7 @@ CGUIEditBox::CGUIEditBox(const wchar_t* text, bool border,
         FrameRect.LowerRightCorner.Y -= skin->getSize(EGDS_TEXT_DISTANCE_Y)+1;
     }
 
-    calculateScrollPos();
+    m_scroll_pos = m_cursor_distance = 0;
 }
 
 
@@ -246,6 +244,8 @@ CGUIEditBox::~CGUIEditBox()
         dl->setIMEEnable(false);
 #endif
     }
+#elif defined(_IRR_COMPILE_WITH_WINDOWS_DEVICE_)
+    DestroyCaret();
 #endif
     if (GUIEngine::ScreenKeyboard::shouldUseScreenKeyboard() &&
         irr_driver->getDevice()->hasOnScreenKeyboard())
@@ -354,7 +354,7 @@ bool CGUIEditBox::OnEvent(const SEvent& event)
                     MouseMarking = false;
                     setTextMarkers(0,0);
                 }
-#ifdef _IRR_COMPILE_WITH_X11_DEVICE_
+#if defined(_IRR_COMPILE_WITH_X11_DEVICE_)
                 if (irr_driver->getDevice()->getType() == irr::EIDT_X11)
                 {
                     CIrrDeviceLinux* dl = dynamic_cast<CIrrDeviceLinux*>(
@@ -363,15 +363,17 @@ bool CGUIEditBox::OnEvent(const SEvent& event)
                     dl->setIMEEnable(false);
 #endif
                 }
+#elif defined(_IRR_COMPILE_WITH_WINDOWS_DEVICE_)
+                DestroyCaret();
 #endif
                 m_from_android_edittext = false;
                 m_composing_start = 0;
                 m_composing_end = 0;
+                m_composing_text.clear();
             }
             else if (event.GUIEvent.EventType == EGET_ELEMENT_FOCUSED)
             {
                 m_mark_begin = m_mark_end = m_cursor_pos = getTextCount();
-                updateCursorDistance();
 #ifdef _IRR_COMPILE_WITH_X11_DEVICE_
                 if (irr_driver->getDevice()->getType() == irr::EIDT_X11)
                 {
@@ -379,10 +381,10 @@ bool CGUIEditBox::OnEvent(const SEvent& event)
                                                        irr_driver->getDevice());
 #ifndef __EMSCRIPTEN__
                     dl->setIMEEnable(true);
-                    dl->setIMELocation(calculateICPos());
 #endif
                 }
 #endif
+                calculateScrollPos();
 #ifdef ANDROID
                 if (GUIEngine::ScreenKeyboard::shouldUseScreenKeyboard() &&
                     irr_driver->getDevice()->hasOnScreenKeyboard() &&
@@ -400,14 +402,9 @@ bool CGUIEditBox::OnEvent(const SEvent& event)
                 {
                     m_from_android_edittext = false;
                 }
+                m_composing_text.clear();
             }
             break;
-#if defined(_IRR_COMPILE_WITH_WINDOWS_DEVICE_)
-        case EET_IMPUT_METHOD_EVENT:
-            if (processIMEEvent(event))
-                return true;
-            break;
-#endif
         case EET_KEY_INPUT_EVENT:
             if (processKey(event))
                 return true;
@@ -858,7 +855,6 @@ bool CGUIEditBox::processKey(const SEvent& event)
     if (text_changed)
     {
         updateGlyphLayouts();
-        sendGuiEvent(EGET_EDITBOX_CHANGED);
     }
 
     // Set new text markers
@@ -877,50 +873,6 @@ bool CGUIEditBox::processKey(const SEvent& event)
 }
 
 
-#if defined(_IRR_COMPILE_WITH_WINDOWS_DEVICE_)
-bool CGUIEditBox::processIMEEvent(const SEvent& event)
-{
-    switch(event.InputMethodEvent.Event)
-    {
-    case EIME_CHAR_INPUT:
-        inputChar(event.InputMethodEvent.Char);
-        return true;
-    case EIME_CHANGE_POS:
-    {
-        updateCursorDistance();
-        core::position2di pos = calculateICPos();
-
-        IGUIFont* font = OverrideFont;
-        IGUISkin* skin = Environment->getSkin();
-
-        if (!OverrideFont)
-            font = skin->getFont();
-
-        irr::updateICPos(event.InputMethodEvent.Handle, pos.X,pos.Y, font->getHeightPerLine());
-
-        return true;
-    }
-    default:
-        break;
-    }
-
-    return false;
-}
-#endif
-
-#if defined(_IRR_COMPILE_WITH_WINDOWS_DEVICE_) || defined(_IRR_COMPILE_WITH_X11_DEVICE_)
-//! calculate the position of input composition window
-core::position2di CGUIEditBox::calculateICPos()
-{
-    core::position2di pos;
-    pos.X = CurrentTextRect.UpperLeftCorner.X + m_cursor_distance;
-    //bug? The text is always drawn in the height of the center. SetTextAlignment() doesn't influence.
-    pos.Y = AbsoluteRect.getCenter().Y + (Border ? 3 : 0);
-    return pos;
-}
-
-
-#endif
 //! draws the element and its children
 void CGUIEditBox::draw()
 {
@@ -928,6 +880,8 @@ void CGUIEditBox::draw()
     if (!IsVisible)
         return;
 
+    if (Environment->hasFocus(this))
+        updateSurrogatePairText();
     GUIEngine::ScreenKeyboard* screen_kbd = GUIEngine::ScreenKeyboard::getCurrent();
     bool has_screen_kbd = (screen_kbd && screen_kbd->getEditBox() == this);
     
@@ -980,31 +934,60 @@ void CGUIEditBox::draw()
     const s32 realcbgn = m_composing_start < m_composing_end ? m_composing_start : m_composing_end;
     const s32 realcend = m_composing_start < m_composing_end ? m_composing_end : m_composing_start;
 
-    for (unsigned i = 0; i < m_glyph_layouts.size(); i++)
-    {
-        GlyphLayout& glyph = m_glyph_layouts[i];
-        auto& cluster = glyph.cluster;
-        for (unsigned c = 0; c < glyph.cluster.size(); c++)
-        {
-            if (realmbgn != realmend)
-            {
-                if (cluster[c] >= realmbgn && cluster[c] < realmend)
-                    glyph.draw_flags.at(c) = GLD_MARKED;
-            }
-            else if (!PasswordBox && realcbgn != realcend)
-            {
-                if (cluster[c] >= realcbgn && cluster[c] < realcend)
-                    glyph.draw_flags.at(c) = GLD_COMPOSING;
-            }
-            else
-                glyph.draw_flags.at(c) = GLD_NONE;
-        }
-    }
-
     // draw the text layout
-    font->draw(m_glyph_layouts, CurrentTextRect,
-        OverrideColorEnabled ? OverrideColor : skin->getColor(EGDC_BUTTON_TEXT),
-        false, true, &localClipRect);
+    if (!m_composing_text.empty())
+    {
+        std::vector<gui::GlyphLayout> ct;
+        std::u32string total = m_edit_text;
+        const s32 realcbgn = m_cursor_pos;
+        const s32 realcend = m_cursor_pos + (s32)m_composing_text.size();
+        total.insert(m_cursor_pos, m_composing_text);
+        font_manager->shape(total, ct);
+        for (unsigned i = 0; i < ct.size(); i++)
+        {
+            GlyphLayout& glyph = ct[i];
+            auto& cluster = glyph.cluster;
+            for (unsigned c = 0; c < glyph.cluster.size(); c++)
+            {
+                if (realcbgn != realcend)
+                {
+                    if (cluster[c] >= realcbgn && cluster[c] < realcend)
+                        glyph.draw_flags.at(c) = GLD_COMPOSING;
+                }
+                else
+                    glyph.draw_flags.at(c) = GLD_NONE;
+            }
+        }
+        font->draw(ct, CurrentTextRect,
+            OverrideColorEnabled ? OverrideColor : skin->getColor(EGDC_BUTTON_TEXT),
+            false, true, &localClipRect);
+    }
+    else
+    {
+        for (unsigned i = 0; i < m_glyph_layouts.size(); i++)
+        {
+            GlyphLayout& glyph = m_glyph_layouts[i];
+            auto& cluster = glyph.cluster;
+            for (unsigned c = 0; c < glyph.cluster.size(); c++)
+            {
+                if (realmbgn != realmend)
+                {
+                    if (cluster[c] >= realmbgn && cluster[c] < realmend)
+                        glyph.draw_flags.at(c) = GLD_MARKED;
+                }
+                else if (!PasswordBox && realcbgn != realcend)
+                {
+                    if (cluster[c] >= realcbgn && cluster[c] < realcend)
+                        glyph.draw_flags.at(c) = GLD_COMPOSING;
+                }
+                else
+                    glyph.draw_flags.at(c) = GLD_NONE;
+            }
+        }
+        font->draw(m_glyph_layouts, CurrentTextRect,
+            OverrideColorEnabled ? OverrideColor : skin->getColor(EGDC_BUTTON_TEXT),
+            false, true, &localClipRect);
+    }
 
     // Reset draw flags
     for (unsigned i = 0; i < m_glyph_layouts.size(); i++)
@@ -1206,7 +1189,7 @@ s32 CGUIEditBox::getCursorPos(s32 x, s32 y)
     x += m_scroll_pos;
     if (x < 0)
         x = 0;
-    return getCurosrFromDimension(x, y, m_glyph_layouts, font->getHeightPerLine(),
+    return getCurosrFromDimension((f32)x, (f32)y, m_glyph_layouts, font->getHeightPerLine(),
         font->getInverseShaping(), font->getScale());
 }
 
@@ -1274,7 +1257,7 @@ void CGUIEditBox::setTextRect(s32 line)
 }
 
 
-void CGUIEditBox::inputChar(wchar_t c)
+void CGUIEditBox::inputChar(char32_t c)
 {
     if (!isEnabled())
         return;
@@ -1282,6 +1265,18 @@ void CGUIEditBox::inputChar(wchar_t c)
     // Ignore unsupported characters
     if (c < 32)
         return;
+
+    if (c < 65536)
+    {
+        wchar_t wc = c & 65535;
+        if (utf8::internal::is_surrogate(wc) || !m_surrogate_chars.empty())
+        {
+            // Handle utf16 to 32 conversion together later, including any emoji
+            // joint character (which is not surrogate)
+            m_surrogate_chars.push_back(wc);
+            return;
+        }
+    }
 
     if ((u32)getTextCount() < m_max_chars || m_max_chars == 0)
     {
@@ -1312,7 +1307,6 @@ void CGUIEditBox::inputChar(wchar_t c)
         m_force_show_cursor_time = StkTime::getMonoTimeMs() + 200;
         updateGlyphLayouts();
         setTextMarkers(0, 0);
-        sendGuiEvent(EGET_EDITBOX_CHANGED);
         calculateScrollPos();
     }
 }
@@ -1374,7 +1368,11 @@ void CGUIEditBox::calculateScrollPos()
         m_scroll_pos = 0;
 
     // todo: adjust scrollbar
+    // calculate the position of input composition window
 #if defined(_IRR_COMPILE_WITH_X11_DEVICE_)
+    m_ic_pos.X = CurrentTextRect.UpperLeftCorner.X + m_cursor_distance;
+    // bug? The text is always drawn in the height of the center. SetTextAlignment() doesn't influence.
+    m_ic_pos.Y = AbsoluteRect.getCenter().Y + (Border ? 3 : 0);
     if (irr_driver->getDevice()->getType() == irr::EIDT_X11)
     {
         CIrrDeviceLinux* dl = dynamic_cast<CIrrDeviceLinux*>(
@@ -1382,11 +1380,28 @@ void CGUIEditBox::calculateScrollPos()
 #ifndef __EMSCRIPTEN__
         if (dl)
         {
-	  dl->setIMELocation(calculateICPos());
+            dl->setIMELocation(m_ic_pos);
         }
 #endif // __EMSCRIPTEN__
     }
+#elif defined(_IRR_COMPILE_WITH_WINDOWS_DEVICE_)
+    m_ic_pos.X = CurrentTextRect.UpperLeftCorner.X + m_cursor_distance;
+    m_ic_pos.Y = CurrentTextRect.UpperLeftCorner.Y;
+
+    // We need a native windows api caret for ime language chooser
+    // positioning, we always hide it though and draw with our own
+    // opengl caret later
+    CIrrDeviceWin32* win = NULL;
+    if (irr_driver->getDevice()->getType() == irr::EIDT_WIN32)
+        win = dynamic_cast<CIrrDeviceWin32*>(irr_driver->getDevice());
+    if (!isVisible() || !win)
+        return;
+
+    CreateCaret(win->getHandle(), NULL, 1, GUIEngine::getFontHeight());
+    SetCaretPos(m_ic_pos.X, m_ic_pos.Y);
+    HideCaret(win->getHandle());
 #endif
+
 #endif   // SERVER_ONLY
 }
 
@@ -1444,7 +1459,7 @@ void CGUIEditBox::serializeAttributes(io::IAttributes* out, io::SAttributeReadWr
     out->addBool  ("AutoScroll",          AutoScroll);
     out->addBool  ("PasswordBox",         PasswordBox);
     core::stringw ch = L" ";
-    ch[0] = PasswordChar;
+    ch[0] = (wchar_t)PasswordChar;
     out->addString("PasswordChar",        ch.c_str());
     out->addEnum  ("HTextAlign",          HAlign, GUIAlignmentNames);
     out->addEnum  ("VTextAlign",          VAlign, GUIAlignmentNames);
@@ -1484,7 +1499,8 @@ void CGUIEditBox::openScreenKeyboard()
     if (GUIEngine::ScreenKeyboard::getCurrent() != NULL)
         return;
 
-    new GUIEngine::ScreenKeyboard(1.0f, 0.40f, this);
+    GUIEngine::ScreenKeyboard* k = new GUIEngine::ScreenKeyboard(1.0f, 0.40f, this);
+    k->init();
 }
 
 // Real copying is happening in text_box_widget.cpp with static function
@@ -1541,4 +1557,55 @@ void CGUIEditBox::updateGlyphLayouts()
         font_manager->shape(m_edit_text, m_glyph_layouts);
     Text = StringUtils::utf32ToWide(m_edit_text);
 #endif
+}
+
+void CGUIEditBox::updateSurrogatePairText()
+{
+    if (!m_surrogate_chars.empty())
+    {
+        wchar_t last_char = m_surrogate_chars.back();
+        if (utf8::internal::is_trail_surrogate(last_char) ||
+            !utf8::internal::is_surrogate(last_char))
+        {
+            const s32 realmbgn = m_mark_begin < m_mark_end ? m_mark_begin : m_mark_end;
+            const s32 realmend = m_mark_begin < m_mark_end ? m_mark_end : m_mark_begin;
+            m_surrogate_chars.push_back(0);
+            std::u32string result = StringUtils::wideToUtf32(m_surrogate_chars.data());
+            if (m_mark_begin == m_mark_end)
+            {
+                // insert text
+                std::u32string sub_str = m_edit_text.substr(0, m_cursor_pos);
+                sub_str += result;
+                sub_str += m_edit_text.substr(m_cursor_pos, m_edit_text.size() - m_cursor_pos);
+
+                if (m_max_chars == 0 || sub_str.size() <= m_max_chars) // thx to Fish FH for fix
+                {
+                    m_edit_text = sub_str;
+                    m_cursor_pos = m_cursor_pos + (s32)result.size();
+                }
+            }
+            else
+            {
+                // replace text
+                std::u32string sub_str = m_edit_text.substr(0, realmbgn);
+                sub_str += result;
+                sub_str += m_edit_text.substr(realmend, m_edit_text.size() - realmend);
+
+                if (m_max_chars == 0 || sub_str.size() <= m_max_chars) // thx to Fish FH for fix
+                {
+                    m_edit_text = sub_str;
+                    m_cursor_pos = realmbgn + (s32)sub_str.size();
+                }
+            }
+            m_force_show_cursor_time = StkTime::getMonoTimeMs() + 200;
+            updateGlyphLayouts();
+            setTextMarkers(0, 0);
+            if (m_cursor_pos > getTextCount())
+                m_cursor_pos = getTextCount();
+            if (m_cursor_pos < 0)
+                m_cursor_pos = 0;
+            calculateScrollPos();
+            m_surrogate_chars.clear();
+        }
+    }
 }
